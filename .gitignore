@@ -1,0 +1,76 @@
+# ==========================================
+# 1. Core Operating System / IDE Files
+# ==========================================
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln.docstates
+
+# ==========================================
+# 2. Frontend / Node / Bun (Vite)
+# ==========================================
+# Dependencies
+frontend/node_modules/
+frontend/jspm_packages/
+frontend/web_modules/
+
+# Production builds
+frontend/dist/
+frontend/build/
+
+# Local environment variables (API keys, secrets)
+frontend/.env
+frontend/.env.local
+frontend/.env.*.local
+frontend/*.env.json
+
+# Log files
+frontend/*.log
+frontend/*.log.*
+frontend/npm-debug.log*
+frontend/yarn-debug.log*
+frontend/yarn-error.log*
+frontend/pnpm-debug.log*
+frontend/.pnpm-debug.log*
+
+# Bun specific
+frontend/.bun/
+frontend/bun.lockb
+
+# ==========================================
+# 3. Backend / .NET Core
+# ==========================================
+# Build outputs
+backend/bin/
+backend/obj/
+
+# User-specific files
+*.rsuser
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# .NET Core / Visual Studio caching
+.vs/
+_ReSharper.*/
+*.DotSettings.user
+
+# App secrets and local configurations
+backend/appsettings.Development.json
+backend/Secrets.json
+backend/.env
+
+# ==========================================
+# 4. Database (SQLite / Local DBs)
+# ==========================================
+# Ignore local runtime databases if they auto-generate on startup
+# Remove the lines below if you explicitly want to commit a template SQLite file
+database/*.db
+database/*.db-wal
+database/*.db-shm
+*.sqlite
