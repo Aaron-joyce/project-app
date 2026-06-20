@@ -25,7 +25,6 @@ function App() {
 
   return (
     <div className="min-h-screen bg-stone-900 text-stone-100 flex flex-col font-sans selection:bg-olive-650 selection:text-white">
-      {/* Premium Glassmorphic Header */}
       <header className="sticky top-0 z-50 backdrop-blur-md bg-stone-900/70 border-b border-stone-800 px-8 py-4 flex justify-between items-center shadow-lg">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-stone-600 to-olive-600 flex items-center justify-center shadow-md shadow-olive-600/20">
@@ -35,8 +34,7 @@ function App() {
             </svg>
           </div>
           <div>
-            <h1 className="text-xl font-bold tracking-wide text-stone-100">GeoPerson App</h1>
-            <p className="text-[10px] text-olive-400 font-medium tracking-wider uppercase">Spatial Registry</p>
+            <h1 className="text-xl font-bold tracking-wide text-stone-100">Project App</h1>
           </div>
         </div>
 

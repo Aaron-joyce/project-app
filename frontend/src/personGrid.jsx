@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AgGridReact } from 'ag-grid-react';
 import { ModuleRegistry, themeQuartz, colorSchemeDark } from 'ag-grid-community';
 import { AllCommunityModule } from 'ag-grid-community';
@@ -23,51 +23,29 @@ const stoneOliveTheme = themeQuartz
     fontFamily: 'Outfit, sans-serif',
   });
 
-const DUMMY_PERSONS = [
-  { 
-    id: 1, 
-    fullName: "Sarah Jenkins", 
-    phoneNumber: "+1 (555) 019-2834", 
-    emailAddress: "sarah.j@example.com", 
-    shapeType: "Circle", 
-    geometryDataJson: JSON.stringify({ center: { lat: 19.082, lng: 72.881 }, radius: 1200 }) 
-  },
-  { 
-    id: 2, 
-    fullName: "Marcus Vance", 
-    phoneNumber: "+1 (555) 014-9921", 
-    emailAddress: "marcus.v@example.com", 
-    shapeType: "Polygon", 
-    geometryDataJson: JSON.stringify([{ lat: 19.076, lng: 72.877 }, { lat: 19.085, lng: 72.890 }, { lat: 19.060, lng: 72.895 }]) 
-  },
-  { 
-    id: 3, 
-    fullName: "Elena Rostova", 
-    phoneNumber: "+1 (555) 017-8833", 
-    emailAddress: "elena.r@example.com", 
-    shapeType: "Rectangle", 
-    geometryDataJson: JSON.stringify({ northEast: { lat: 19.100, lng: 72.900 }, southWest: { lat: 19.050, lng: 72.850 } }) 
-  },
-  { 
-    id: 4, 
-    fullName: "David Kim", 
-    phoneNumber: "+1 (555) 012-3456", 
-    emailAddress: "david.kim@example.com", 
-    shapeType: "Circle", 
-    geometryDataJson: JSON.stringify({ center: { lat: 19.070, lng: 72.860 }, radius: 800 }) 
-  },
-  { 
-    id: 5, 
-    fullName: "Amara Diallo", 
-    phoneNumber: "+1 (555) 015-6789", 
-    emailAddress: "amara.d@example.com", 
-    shapeType: "Polygon", 
-    geometryDataJson: JSON.stringify([{ lat: 19.090, lng: 72.870 }, { lat: 19.095, lng: 72.880 }, { lat: 19.080, lng: 72.890 }]) 
-  }
-];
-
 export default function PersonGrid({ onEdit, onAddNew }) {
-  const [rowData] = useState(DUMMY_PERSONS);
+  const [rowData, setRowData] = useState([]);
+
+  useEffect(() => {
+    let active = true;
+    const fetchPersons = async () => {
+      try {
+        const response = await fetch('http://localhost:5000/api/person');
+        if (response.ok) {
+          const data = await response.json();
+          if (active) {
+            setRowData(data);
+          }
+        } else {
+          console.error("Server error retrieving persons");
+        }
+      } catch (err) {
+        console.error("Network error retrieving persons:", err);
+      }
+    };
+    fetchPersons();
+    return () => { active = false; };
+  }, []);
 
   // Custom action buttons renderer inside AG Grid cells
   const ActionButtonRenderer = (params) => {

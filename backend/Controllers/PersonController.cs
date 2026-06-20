@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore; // Added for database queries
 using backend.Data;
 using backend.Dtos;
 using backend.Entities;
@@ -14,6 +15,38 @@ public class PersonController : ControllerBase
     public PersonController(AppDbContext context)
     {
         _context = context;
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> GetPersons()
+    {
+        try
+        {
+            var persons = await _context.Persons.ToListAsync();
+            return Ok(persons);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { message = "An error occurred while retrieving data.", error = ex.Message });
+        }
+    }
+
+    [HttpGet("{id}")]
+    public async Task<IActionResult> GetPersonById(int id)
+    {
+        try
+        {
+            var person = await _context.Persons.FindAsync(id);
+            if (person == null)
+            {
+                return NotFound(new { message = $"Person with ID {id} not found." });
+            }
+            return Ok(person);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { message = "An error occurred while retrieving the person.", error = ex.Message });
+        }
     }
 
     [HttpPost]
