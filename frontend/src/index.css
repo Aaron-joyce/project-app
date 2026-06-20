@@ -1,1 +1,26 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
 @import "tailwindcss";
+
+@theme {
+  --font-sans: 'Outfit', sans-serif;
+  
+  /* Custom premium Olive color palette */
+  --color-olive-50: #f5f7f5;
+  --color-olive-100: #e6ebe5;
+  --color-olive-200: #cfdcd1;
+  --color-olive-300: #adc2b0;
+  --color-olive-400: #83a187;
+  --color-olive-500: #618266;
+  --color-olive-650: #49664e;
+  --color-olive-600: #4a634e;
+  --color-olive-700: #3b503e;
+  --color-olive-800: #314034;
+  --color-olive-900: #29352c;
+  --color-olive-950: #151d17;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: #1c1917; /* Stone 900 */
+  color: #fafaf9; /* Stone 50 */
+}

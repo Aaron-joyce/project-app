@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, memo } from "react";
 import { APIProvider, Map, useMap } from "@vis.gl/react-google-maps";
 
-const DrawingManagerControl = ({ onShapeComplete }) => {
+const DrawingManagerControl = ({ onShapeComplete, initialShape }) => {
   const map = useMap();
   // Keeps a stable reference to the visible map layer across renders
   const currentOverlayRef = useRef(null); 
@@ -33,19 +33,8 @@ const DrawingManagerControl = ({ onShapeComplete }) => {
     });
 
     drawingManager.setMap(map);
-    
-    // Triggered when any shape drawing operation finishes
-    window.google.maps.event.addListener(drawingManager, 'overlaycomplete', (event) => {
-      // FIX: If a shape already exists on the map surface, wipe it out immediately
-      if (currentOverlayRef.current) {
-        currentOverlayRef.current.setMap(null);
-      }
 
-      const { type, overlay } = event;
-      
-      // Save the new shape layer to our Ref so we can delete it next time
-      currentOverlayRef.current = overlay;
-
+    const syncShapeUpdate = (overlay, type) => {
       let shapeData = { type, coordinates: null };
 
       if (type === 'circle') {
@@ -67,8 +56,77 @@ const DrawingManagerControl = ({ onShapeComplete }) => {
         }));
       }
 
-      // Sync coordinate state to the main Registration form
       onShapeComplete(shapeData);
+    };
+
+    // Draw initialShape if supplied (View/Edit mode)
+    if (initialShape && initialShape.coordinates) {
+      if (currentOverlayRef.current) {
+        currentOverlayRef.current.setMap(null);
+      }
+
+      let overlay = null;
+      const type = initialShape.type.toLowerCase();
+
+      if (type === 'circle') {
+        overlay = new window.google.maps.Circle({
+          center: initialShape.coordinates.center,
+          radius: initialShape.coordinates.radius,
+          editable: true,
+          clickable: true,
+          map: map
+        });
+        window.google.maps.event.addListener(overlay, 'center_changed', () => syncShapeUpdate(overlay, type));
+        window.google.maps.event.addListener(overlay, 'radius_changed', () => syncShapeUpdate(overlay, type));
+        map.panTo(initialShape.coordinates.center);
+      } else if (type === 'rectangle') {
+        overlay = new window.google.maps.Rectangle({
+          bounds: {
+            north: initialShape.coordinates.northEast.lat,
+            east: initialShape.coordinates.northEast.lng,
+            south: initialShape.coordinates.southWest.lat,
+            west: initialShape.coordinates.southWest.lng
+          },
+          editable: true,
+          clickable: true,
+          map: map
+        });
+        window.google.maps.event.addListener(overlay, 'bounds_changed', () => syncShapeUpdate(overlay, type));
+        map.panTo(initialShape.coordinates.southWest);
+      } else if (type === 'polygon') {
+        overlay = new window.google.maps.Polygon({
+          paths: initialShape.coordinates,
+          editable: true,
+          clickable: true,
+          map: map
+        });
+        const path = overlay.getPath();
+        window.google.maps.event.addListener(path, 'set_at', () => syncShapeUpdate(overlay, type));
+        window.google.maps.event.addListener(path, 'insert_at', () => syncShapeUpdate(overlay, type));
+        window.google.maps.event.addListener(path, 'remove_at', () => syncShapeUpdate(overlay, type));
+        if (initialShape.coordinates[0]) {
+          map.panTo(initialShape.coordinates[0]);
+        }
+      }
+
+      if (overlay) {
+        currentOverlayRef.current = overlay;
+      }
+    }
+    
+    // Triggered when any shape drawing operation finishes
+    window.google.maps.event.addListener(drawingManager, 'overlaycomplete', (event) => {
+      // If a shape already exists on the map surface, wipe it out immediately
+      if (currentOverlayRef.current) {
+        currentOverlayRef.current.setMap(null);
+      }
+
+      const { type, overlay } = event;
+      
+      // Save the new shape layer to our Ref so we can delete it next time
+      currentOverlayRef.current = overlay;
+
+      syncShapeUpdate(overlay, type);
     });
 
     return () => {
@@ -78,14 +136,14 @@ const DrawingManagerControl = ({ onShapeComplete }) => {
         currentOverlayRef.current = null;
       }
     };
-  }, [map, onShapeComplete]);
+  }, [map, onShapeComplete, initialShape]);
 
   return null;
 };
-
-function MapComponent({ onShapeSelect }) {
+ 
+function MapComponent({ onShapeSelect, initialShape }) {
   return (
-    <div className="h-dvh w-full">
+    <div className="h-full w-full">
       <APIProvider apiKey={""} version="3.64" libraries={['drawing']}>
         <Map
           defaultZoom={12}
@@ -93,7 +151,7 @@ function MapComponent({ onShapeSelect }) {
           gestureHandling={'cooperative'}
           style={{ width: '100%', height: '100%' }}
         >
-          <DrawingManagerControl onShapeComplete={onShapeSelect} />
+          <DrawingManagerControl onShapeComplete={onShapeSelect} initialShape={initialShape} />
         </Map>
       </APIProvider>
     </div>
