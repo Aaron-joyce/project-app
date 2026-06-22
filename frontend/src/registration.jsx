@@ -53,20 +53,44 @@ export default function Registration({ editPerson, onCancel }) {
       return;
     }
 
+    // Capitalize the first letter of the shape type (e.g. 'circle' -> 'Circle') for database consistency
+    const shapeTypeFormatted = geometryData.type.charAt(0).toUpperCase() + geometryData.type.slice(1);
+
     const payload = {
       fullName: formData.fullName,
       phoneNumber: formData.phone,
       emailAddress: formData.email,
-      shapeType: geometryData.type,
+      shapeType: shapeTypeFormatted,
       geometryDataJson: JSON.stringify(geometryData.coordinates),
     };
 
     const isEditMode = !!editPerson;
-    
-    // For now, since the user asked not to implement the backend yet:
-    alert(`[MOCK SUCCESS] Form submitted!\nMode: ${isEditMode ? 'EDIT' : 'CREATE'}\nPayload: ${JSON.stringify(payload, null, 2)}`);
-    if (onCancel) {
-      onCancel();
+    const url = isEditMode 
+      ? `http://localhost:5000/api/person/${editPerson.id}`
+      : 'http://localhost:5000/api/person';
+    const method = isEditMode ? 'PUT' : 'POST';
+
+    try {
+      const response = await fetch(url, {
+        method: method,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (response.ok) {
+        alert(isEditMode ? "Person details updated successfully!" : "Person registered successfully!");
+        if (onCancel) {
+          onCancel(); // Redirect back to grid view
+        }
+      } else {
+        const errorData = await response.json().catch(() => ({}));
+        alert(`Error: ${errorData.message || "Failed to save person record."}`);
+      }
+    } catch (err) {
+      console.error("Network error saving record:", err);
+      alert("Network error: Could not reach the backend server.");
     }
   };
 

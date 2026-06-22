@@ -73,4 +73,31 @@ public class PersonController : ControllerBase
             return StatusCode(500, new { message = "An error occurred while saving the registration.", error = ex.Message });
         }
     }
+
+    [HttpPut("{id}")]
+    public async Task<IActionResult> UpdatePerson(int id, [FromBody] PersonDto dto)
+    {
+        try
+        {
+            var person = await _context.Persons.FindAsync(id);
+            if (person == null)
+            {
+                return NotFound(new { message = $"Person with ID {id} not found." });
+            }
+
+            person.FullName = dto.FullName;
+            person.PhoneNumber = dto.PhoneNumber;
+            person.EmailAddress = dto.EmailAddress;
+            person.ShapeType = dto.ShapeType;
+            person.GeometryDataJson = dto.GeometryDataJson;
+
+            await _context.SaveChangesAsync();
+
+            return Ok(new { message = "Person updated successfully!", personId = person.Id });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { message = "An error occurred while updating the record.", error = ex.Message });
+        }
+    }
 }

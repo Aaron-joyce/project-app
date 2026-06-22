@@ -119,7 +119,7 @@ export default function PersonGrid({ onEdit, onAddNew }) {
       </div>
 
       {/* Grid Panel with glassmorphism border wrapper */}
-      <div className="flex-grow w-full backdrop-blur-md rounded-2xl p-4 shadow-2xl overflow-hidden flex flex-col">
+      <div className="grow w-full backdrop-blur-md rounded-2xl p-4 shadow-2xl overflow-hidden flex flex-col">
         <div className="w-full h-full rounded-xl overflow-hidden">
           <AgGridReact
             theme={stoneOliveTheme}
