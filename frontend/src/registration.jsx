@@ -119,6 +119,8 @@ export default function Registration({ editPerson, onCancel }) {
                 onChange={handleInputChange}
                 placeholder="E.g. John Doe" 
                 className="bg-stone-950 border border-stone-750 rounded-lg p-2.5 text-sm text-stone-100 placeholder-stone-500 focus:outline-none focus:border-olive-500 transition-colors"
+                pattern="^[a-zA-Z\s\-']{2,100}$"
+                title="Name can only contain letters, spaces, hyphens, and apostrophes (between 2 and 100 characters)."
                 required
               />
             </div>
@@ -133,6 +135,8 @@ export default function Registration({ editPerson, onCancel }) {
                 onChange={handleInputChange}
                 placeholder="E.g. 9876543210" 
                 className="bg-stone-950 border border-stone-750 rounded-lg p-2.5 text-sm text-stone-100 placeholder-stone-500 focus:outline-none focus:border-olive-500 transition-colors"
+                pattern="^\+?[0-9\s\-()]{7,20}$"
+                title="Phone number must be digits between 7 and 20 characters (optional '+' prefix, spaces, hyphens, and parentheses allowed)."
                 required
               />
             </div>
@@ -147,6 +151,8 @@ export default function Registration({ editPerson, onCancel }) {
                 onChange={handleInputChange}
                 placeholder="E.g. xyz@abc.com" 
                 className="bg-stone-950 border border-stone-750 rounded-lg p-2.5 text-sm text-stone-100 placeholder-stone-500 focus:outline-none focus:border-olive-500 transition-colors"
+                pattern="^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
+                title="Please enter a valid email address (e.g. user@domain.com)."
                 required
               />
             </div>

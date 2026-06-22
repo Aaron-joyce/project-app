@@ -98,7 +98,7 @@ export default function PersonGrid({ onEdit, onAddNew }) {
       {/* Header Panel */}
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h2 className="text-3xl font-extrabold tracking-tight bg-gradient-to-r from-stone-100 via-stone-300 to-olive-400 bg-clip-text text-transparent">
+          <h2 className="text-3xl font-extrabold tracking-tight bg-linear-to-r from-stone-100 via-stone-300 to-olive-400 bg-clip-text text-transparent">
             Registered Persons Directory
           </h2>
           <p className="text-stone-400 text-sm mt-1">
