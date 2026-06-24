@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client'
 import './index.css'
 import Registration from './registration.jsx';
 import PersonGrid from './personGrid.jsx';
+import { ToastProvider } from './toastContext.jsx';
 
 function App() {
   const [currentView, setCurrentView] = useState('grid'); // 'grid', 'add', 'edit'
@@ -83,6 +84,8 @@ function App() {
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <App />
+    <ToastProvider>
+      <App />
+    </ToastProvider>
   </StrictMode>,
 )

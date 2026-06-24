@@ -64,6 +64,7 @@ _ReSharper.*/
 backend/appsettings.Development.json
 backend/Secrets.json
 backend/.env
+backend/help.md
 
 # ==========================================
 # 4. Database (SQLite / Local DBs)

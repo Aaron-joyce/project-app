@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import MapComponent from './map';
+import { useToast } from './toastContext.jsx';
 
 export default function Registration({ editPerson, onCancel }) {
+  const toast = useToast();
   const [formData, setFormData] = useState({
     fullName: '',
     phone: '',
@@ -49,7 +51,7 @@ export default function Registration({ editPerson, onCancel }) {
     e.preventDefault();
 
     if (!formData.fullName || !formData.phone || !formData.email || !geometryData) {
-      alert("Please fill out all fields and draw a shape on the map!");
+      toast.error("Please fill out all fields and draw a shape on the map!");
       return;
     }
 
@@ -80,17 +82,17 @@ export default function Registration({ editPerson, onCancel }) {
       });
 
       if (response.ok) {
-        alert(isEditMode ? "Person details updated successfully!" : "Person registered successfully!");
+        toast.success(isEditMode ? "Person details updated successfully!" : "Person registered successfully!");
         if (onCancel) {
           onCancel(); // Redirect back to grid view
         }
       } else {
         const errorData = await response.json().catch(() => ({}));
-        alert(`Error: ${errorData.message || "Failed to save person record."}`);
+        toast.error(errorData.detail || errorData.message || "Failed to save person record.");
       }
     } catch (err) {
       console.error("Network error saving record:", err);
-      alert("Network error: Could not reach the backend server.");
+      toast.error("Network error: Could not reach the backend server.");
     }
   };
 
