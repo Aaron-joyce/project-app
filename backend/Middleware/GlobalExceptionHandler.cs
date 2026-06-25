@@ -48,6 +48,12 @@ public class GlobalExceptionHandler : IExceptionHandler
                 problemDetails.Detail = argumentEx.Message;
                 break;
 
+            case UnauthorizedAccessException unauthorizedEx:
+                problemDetails.Status = StatusCodes.Status403Forbidden;
+                problemDetails.Title = "Forbidden Access";
+                problemDetails.Detail = unauthorizedEx.Message;
+                break;
+
             case Microsoft.EntityFrameworkCore.DbUpdateException dbUpdateEx:
                 problemDetails.Status = StatusCodes.Status400BadRequest;
                 problemDetails.Title = "Database Update Failed";

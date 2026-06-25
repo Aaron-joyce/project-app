@@ -19,6 +19,9 @@ public class PersonDto
     [RegularExpression(@"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$", ErrorMessage = "Please enter a valid email address.")]
     public string EmailAddress { get; set; } = string.Empty;
 
+    [StringLength(100, MinimumLength = 6, ErrorMessage = "Password must be at least 6 characters long.")]
+    public string? Password { get; set; }
+
     [Required(ErrorMessage = "Shape Type is required.")]
     public string ShapeType { get; set; } = string.Empty;
 

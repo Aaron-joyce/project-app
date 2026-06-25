@@ -1,4 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
+using System.Security.Claims;
 using backend.Dtos;
 using backend.Services;
 
@@ -11,7 +13,6 @@ public class PersonController : ControllerBase
     private readonly IPersonService _personService;
     private readonly ILogger<PersonController> _logger;
 
-    // Constructor-inject IPersonService and ILogger
     public PersonController(IPersonService personService, ILogger<PersonController> logger)
     {
         _personService = personService;
@@ -19,18 +20,22 @@ public class PersonController : ControllerBase
     }
 
     [HttpGet]
+    [Authorize]
     public async Task<IActionResult> GetPersons()
     {
-        _logger.LogInformation("Controller: Retrieving all persons.");
-        var persons = await _personService.GetAllPersonsAsync();
+        var currentUserId = GetCurrentUserId();
+        _logger.LogInformation("Controller: Retrieving persons for user ID: {UserId}.", currentUserId);
+        var persons = await _personService.GetAllPersonsAsync(currentUserId);
         return Ok(persons);
     }
 
     [HttpGet("{id}")]
+    [Authorize]
     public async Task<IActionResult> GetPersonById(Guid id)
     {
-        _logger.LogInformation("Controller: Retrieving details for person ID: {PersonId}", id);
-        var person = await _personService.GetPersonByIdAsync(id);
+        var currentUserId = GetCurrentUserId();
+        _logger.LogInformation("Controller: Retrieving details for person ID: {PersonId} by {UserId}", id, currentUserId);
+        var person = await _personService.GetPersonByIdAsync(id, currentUserId);
         return Ok(person);
     }
 
@@ -43,10 +48,22 @@ public class PersonController : ControllerBase
     }
 
     [HttpPut("{id}")]
+    [Authorize]
     public async Task<IActionResult> UpdatePerson(Guid id, [FromBody] PersonDto dto)
     {
-        _logger.LogInformation("Controller: Updating person ID: {PersonId} ({FullName})", id, dto.FullName);
-        await _personService.UpdatePersonAsync(id, dto);
+        var currentUserId = GetCurrentUserId();
+        _logger.LogInformation("Controller: Updating person ID: {PersonId} ({FullName}) by {UserId}", id, dto.FullName, currentUserId);
+        await _personService.UpdatePersonAsync(id, dto, currentUserId);
         return Ok(new { message = "Person updated successfully!", personId = id });
+    }
+
+    private Guid GetCurrentUserId()
+    {
+        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(userIdClaim) || !Guid.TryParse(userIdClaim, out var currentUserId))
+        {
+            throw new UnauthorizedAccessException("Invalid or missing user identity in token.");
+        }
+        return currentUserId;
     }
 }

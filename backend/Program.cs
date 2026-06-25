@@ -1,4 +1,7 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
 using backend.Data;
 using backend.Middleware;
 using backend.Services;
@@ -28,6 +31,32 @@ try
     // Register the Database Context
     builder.Services.AddDbContext<AppDbContext>(options =>
         options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+    // Configure JWT Authentication
+    var jwtKey = builder.Configuration["Jwt:Key"] ?? "superSecretKeyOfAtLeast32BytesLengthNeededForSigningJWTs!!";
+    var key = Encoding.UTF8.GetBytes(jwtKey);
+
+    builder.Services.AddAuthentication(options =>
+    {
+        options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+        options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+    })
+    .AddJwtBearer(options =>
+    {
+        options.RequireHttpsMetadata = false; // Disable in dev
+        options.SaveToken = true;
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(key),
+            ValidateIssuer = true,
+            ValidIssuer = builder.Configuration["Jwt:Issuer"] ?? "ProjectAppAPI",
+            ValidateAudience = true,
+            ValidAudience = builder.Configuration["Jwt:Audience"] ?? "ProjectAppClient",
+            ValidateLifetime = true,
+            ClockSkew = TimeSpan.Zero
+        };
+    });
 
     // Configure CORS to allow the frontend to access the API
     builder.Services.AddCors(options =>
@@ -69,6 +98,8 @@ try
     // Enable CORS
     app.UseCors("AllowFrontend");
 
+    // Enable Authentication BEFORE Authorization
+    app.UseAuthentication();
     app.UseAuthorization();
 
     // Map Controller routes
@@ -84,4 +115,3 @@ finally
 {
     Log.CloseAndFlush();
 }
-
