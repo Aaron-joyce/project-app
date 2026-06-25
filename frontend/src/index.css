@@ -37,3 +37,13 @@ body {
   background-color: #1c1917; /* Stone 900 */
   color: #fafaf9; /* Stone 50 */
 }
+
+/* Google Maps Drawing Manager UI Reset (Tailwind Override) */
+.gmnoprint *, .gm-style * {
+  box-sizing: content-box !important;
+}
+.gmnoprint img, .gm-style img {
+  max-width: none !important;
+  max-height: none !important;
+  display: inline !important;
+}

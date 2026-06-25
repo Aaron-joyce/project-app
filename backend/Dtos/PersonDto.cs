@@ -11,7 +11,7 @@ public class PersonDto
 
     [Required(ErrorMessage = "Phone Number is required.")]
     [Phone(ErrorMessage = "Invalid Phone Number format.")]
-    [RegularExpression(@"^\+?[0-9\s\-()]{7,20}$", ErrorMessage = "Phone number must be digits between 7 and 20 characters (optional '+' prefix, spaces, hyphens, and parentheses allowed).")]
+    [RegularExpression(@"^[0-9]{10}$", ErrorMessage = "Phone number must be exactly 10 digits.")]
     public string PhoneNumber { get; set; } = string.Empty;
 
     [Required(ErrorMessage = "Email Address is required.")]

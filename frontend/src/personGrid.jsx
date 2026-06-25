@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { AgGridReact } from 'ag-grid-react';
 import { ModuleRegistry, themeQuartz, colorSchemeDark } from 'ag-grid-community';
 import { AllCommunityModule } from 'ag-grid-community';
@@ -24,7 +25,8 @@ const stoneOliveTheme = themeQuartz
     fontFamily: 'Outfit, sans-serif',
   });
 
-export default function PersonGrid({ onEdit, onAddNew }) {
+export default function PersonGrid() {
+  const navigate = useNavigate();
   const [rowData, setRowData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -45,6 +47,7 @@ export default function PersonGrid({ onEdit, onAddNew }) {
         toast.error(errorMsg);
       }
     } catch (err) {
+      console.error(err);
       const networkMsg = "Network error: Could not reach the API server. Please verify the backend is running.";
       setError(networkMsg);
       toast.error("Failed to connect to the directory API.");
@@ -54,7 +57,17 @@ export default function PersonGrid({ onEdit, onAddNew }) {
   }, [toast]);
 
   useEffect(() => {
-    fetchPersons();
+    let active = true;
+    const load = async () => {
+      await Promise.resolve();
+      if (active) {
+        fetchPersons();
+      }
+    };
+    load();
+    return () => {
+      active = false;
+    };
   }, [fetchPersons]);
 
   // Custom action buttons renderer inside AG Grid cells
@@ -62,7 +75,7 @@ export default function PersonGrid({ onEdit, onAddNew }) {
     return (
       <div className="flex gap-2 items-center h-full">
         <button 
-          onClick={() => onEdit(params.data)} 
+          onClick={() => navigate(`/edit/${params.data.id}`)} 
           className="bg-olive-600 hover:bg-olive-500 text-stone-50 text-xs font-semibold px-3 py-1 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 cursor-pointer border border-olive-500/30"
         >
           View / Edit
@@ -116,8 +129,8 @@ export default function PersonGrid({ onEdit, onAddNew }) {
           </p>
         </div>
         <button
-          onClick={onAddNew}
-          className="relative group overflow-hidden bg-olive-600 text-white font-medium px-5 py-2.5 rounded-xl shadow-lg hover:shadow-olive-500/25 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 cursor-pointer"
+          onClick={() => navigate('/register')}
+          className="relative group overflow-hidden bg-olive-650 text-white font-medium px-5 py-2.5 rounded-xl shadow-lg hover:shadow-olive-500/25 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 cursor-pointer"
         >
           <span className="relative z-10 flex items-center gap-2">
             <svg className="w-5 h-5 text-stone-100" fill="none" viewBox="0 0 24 24" stroke="currentColor">

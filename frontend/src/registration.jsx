@@ -1,42 +1,87 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import MapComponent from './map';
 import { useToast } from './toastContext.jsx';
 
-export default function Registration({ editPerson, onCancel }) {
+const NAME_REGEX = /^[a-zA-Z\s\-']{2,100}$/;
+const PHONE_REGEX = /^[0-9]{10}$/;
+const EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+
+export default function Registration() {
+  const navigate = useNavigate();
+  const { id } = useParams();
   const toast = useToast();
+  
   const [formData, setFormData] = useState({
     fullName: '',
     phone: '',
     email: '',
   });
   const [geometryData, setGeometryData] = useState(null);
+  const [loading, setLoading] = useState(false);
 
-  // Sync state if editPerson changes
+  // Sync state if id changes (Fetch details if in Edit mode)
   useEffect(() => {
-    if (editPerson) {
-      setFormData({
-        fullName: editPerson.fullName || '',
-        phone: editPerson.phoneNumber || '',
-        email: editPerson.emailAddress || '',
-      });
-      if (editPerson.geometryDataJson) {
+    let active = true;
+    const load = async () => {
+      await Promise.resolve();
+      if (!active) return;
+      if (id) {
+        setLoading(true);
         try {
-          setGeometryData({
-            type: editPerson.shapeType.toLowerCase(),
-            coordinates: JSON.parse(editPerson.geometryDataJson)
-          });
+          const response = await fetch(`http://localhost:5000/api/person/${id}`);
+          if (response.ok && active) {
+            const person = await response.json();
+            setFormData({
+              fullName: person.fullName || '',
+              phone: person.phoneNumber || '',
+              email: person.emailAddress || '',
+            });
+            if (person.geometryDataJson) {
+              try {
+                setGeometryData({
+                  type: person.shapeType.toLowerCase(),
+                  coordinates: JSON.parse(person.geometryDataJson)
+                });
+              } catch (err) {
+                console.error("Failed to parse initial shape geometry JSON:", err);
+                setGeometryData(null);
+              }
+            } else {
+              setGeometryData(null);
+            }
+          } else if (active) {
+            const errorData = await response.json().catch(() => ({}));
+            toast.error(errorData.detail || errorData.message || "Failed to load person details.");
+            navigate('/');
+          }
         } catch (err) {
-          console.error("Failed to parse initial shape geometry JSON:", err);
-          setGeometryData(null);
+          console.error(err);
+          if (active) {
+            toast.error("Network error: Could not reach the API server to load person details.");
+            navigate('/');
+          }
+        } finally {
+          if (active) {
+            setLoading(false);
+          }
         }
       } else {
-        setGeometryData(null);
+        setFormData((prev) => {
+          if (prev.fullName === '' && prev.phone === '' && prev.email === '') return prev;
+          return { fullName: '', phone: '', email: '' };
+        });
+        setGeometryData((prev) => {
+          if (prev === null) return prev;
+          return null;
+        });
       }
-    } else {
-      setFormData({ fullName: '', phone: '', email: '' });
-      setGeometryData(null);
-    }
-  }, [editPerson]);
+    };
+    load();
+    return () => {
+      active = false;
+    };
+  }, [id, navigate, toast]);
 
   const handleInputChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -55,6 +100,21 @@ export default function Registration({ editPerson, onCancel }) {
       return;
     }
 
+    if (!NAME_REGEX.test(formData.fullName)) {
+      toast.error("Invalid Name: Names can only contain letters, spaces, hyphens, and apostrophes (2-100 characters).");
+      return;
+    }
+
+    if (!PHONE_REGEX.test(formData.phone)) {
+      toast.error("Invalid Phone Number: Must be exactly 10 digits.");
+      return;
+    }
+
+    if (!EMAIL_REGEX.test(formData.email)) {
+      toast.error("Invalid Email Address format.");
+      return;
+    }
+
     // Capitalize the first letter of the shape type (e.g. 'circle' -> 'Circle') for database consistency
     const shapeTypeFormatted = geometryData.type.charAt(0).toUpperCase() + geometryData.type.slice(1);
 
@@ -66,9 +126,9 @@ export default function Registration({ editPerson, onCancel }) {
       geometryDataJson: JSON.stringify(geometryData.coordinates),
     };
 
-    const isEditMode = !!editPerson;
+    const isEditMode = !!id;
     const url = isEditMode 
-      ? `http://localhost:5000/api/person/${editPerson.id}`
+      ? `http://localhost:5000/api/person/${id}`
       : 'http://localhost:5000/api/person';
     const method = isEditMode ? 'PUT' : 'POST';
 
@@ -83,9 +143,7 @@ export default function Registration({ editPerson, onCancel }) {
 
       if (response.ok) {
         toast.success(isEditMode ? "Person details updated successfully!" : "Person registered successfully!");
-        if (onCancel) {
-          onCancel(); // Redirect back to grid view
-        }
+        navigate('/');
       } else {
         const errorData = await response.json().catch(() => ({}));
         toast.error(errorData.detail || errorData.message || "Failed to save person record.");
@@ -101,13 +159,25 @@ export default function Registration({ editPerson, onCancel }) {
     return `${geometryData.type.toUpperCase()} shape captured`;
   };
 
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center h-[calc(100vh-80px)] bg-stone-900 text-stone-400">
+        <svg className="animate-spin h-8 w-8 text-olive-500 mb-3" fill="none" viewBox="0 0 24 24">
+          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+        </svg>
+        <span className="text-sm font-medium tracking-wide">Loading person details...</span>
+      </div>
+    );
+  }
+
   return (
     <section className="bg-stone-900 justify-center items-center h-[calc(100vh-80px)] flex overflow-hidden">
       {/* Left Form Panel */}
       <div className="w-1/3 h-full flex justify-center items-center p-6 border-r border-stone-850 bg-stone-900">
         <div className="flex flex-col items-center gap-6 p-8 w-full max-w-md rounded-2xl bg-stone-800 border border-stone-700/60 shadow-2xl">
           <h3 className="text-2xl font-bold tracking-tight text-stone-100">
-            {editPerson ? "Edit Person Details" : "Register New Person"}
+            {id ? "Edit Person Details" : "Register New Person"}
           </h3>
           
           <form onSubmit={handleSubmit} className="flex flex-col space-y-4 items-center w-full">
@@ -120,9 +190,10 @@ export default function Registration({ editPerson, onCancel }) {
                 value={formData.fullName}
                 onChange={handleInputChange}
                 placeholder="E.g. John Doe" 
-                className="bg-stone-950 border border-stone-750 rounded-lg p-2.5 text-sm text-stone-100 placeholder-stone-500 focus:outline-none focus:border-olive-500 transition-colors"
+                className="bg-stone-950 border border-stone-750 rounded-lg p-2.5 text-sm text-stone-100 placeholder-stone-500 focus:outline-none focus:border-olive-500 transition-colors disabled:opacity-60 disabled:cursor-not-allowed disabled:border-stone-800 disabled:bg-stone-950/40"
                 pattern="^[a-zA-Z\s\-']{2,100}$"
                 title="Name can only contain letters, spaces, hyphens, and apostrophes (between 2 and 100 characters)."
+                disabled={!!id}
                 required
               />
             </div>
@@ -136,9 +207,10 @@ export default function Registration({ editPerson, onCancel }) {
                 value={formData.phone}
                 onChange={handleInputChange}
                 placeholder="E.g. 9876543210" 
-                className="bg-stone-950 border border-stone-750 rounded-lg p-2.5 text-sm text-stone-100 placeholder-stone-500 focus:outline-none focus:border-olive-500 transition-colors"
-                pattern="^\+?[0-9\s\-()]{7,20}$"
-                title="Phone number must be digits between 7 and 20 characters (optional '+' prefix, spaces, hyphens, and parentheses allowed)."
+                className="bg-stone-950 border border-stone-750 rounded-lg p-2.5 text-sm text-stone-100 placeholder-stone-500 focus:outline-none focus:border-olive-500 transition-colors disabled:opacity-60 disabled:cursor-not-allowed disabled:border-stone-800 disabled:bg-stone-950/40"
+                pattern="^[0-9]{10}$"
+                title="Phone number must be exactly 10 digits."
+                disabled={!!id}
                 required
               />
             </div>
@@ -152,9 +224,10 @@ export default function Registration({ editPerson, onCancel }) {
                 value={formData.email}
                 onChange={handleInputChange}
                 placeholder="E.g. xyz@abc.com" 
-                className="bg-stone-950 border border-stone-750 rounded-lg p-2.5 text-sm text-stone-100 placeholder-stone-500 focus:outline-none focus:border-olive-500 transition-colors"
+                className="bg-stone-950 border border-stone-750 rounded-lg p-2.5 text-sm text-stone-100 placeholder-stone-500 focus:outline-none focus:border-olive-500 transition-colors disabled:opacity-60 disabled:cursor-not-allowed disabled:border-stone-800 disabled:bg-stone-950/40"
                 pattern="^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
                 title="Please enter a valid email address (e.g. user@domain.com)."
+                disabled={!!id}
                 required
               />
             </div>
@@ -177,7 +250,7 @@ export default function Registration({ editPerson, onCancel }) {
             <div className="flex gap-3 w-full mt-4">
               <button 
                 type="button" 
-                onClick={onCancel}
+                onClick={() => navigate('/')}
                 className="flex-1 bg-stone-700 hover:bg-stone-600 text-stone-100 font-semibold py-2.5 rounded-xl transition-all duration-200 cursor-pointer text-center text-sm shadow-md"
               >
                 Cancel
