@@ -1,21 +1,24 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, Link } from 'react-router-dom';
 import MapComponent from './map';
 import { useToast } from './toastContext.jsx';
+import { useAuth } from './authContext.jsx';
 
 const NAME_REGEX = /^[a-zA-Z\s\-']{2,100}$/;
 const PHONE_REGEX = /^[0-9]{10}$/;
-const EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+const EMAIL_REGEX = /^[a-zA-Z0-9._%\+\-]+@[a-zA-Z0-9\.\-]+\.[a-zA-Z]{2,}$/;
 
 export default function Registration() {
   const navigate = useNavigate();
   const { id } = useParams();
   const toast = useToast();
+  const { authFetch, login, isAuthenticated } = useAuth();
   
   const [formData, setFormData] = useState({
     fullName: '',
     phone: '',
     email: '',
+    password: '',
   });
   const [geometryData, setGeometryData] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -29,13 +32,14 @@ export default function Registration() {
       if (id) {
         setLoading(true);
         try {
-          const response = await fetch(`http://localhost:5000/api/person/${id}`);
+          const response = await authFetch(`http://localhost:5000/api/person/${id}`);
           if (response.ok && active) {
             const person = await response.json();
             setFormData({
               fullName: person.fullName || '',
               phone: person.phoneNumber || '',
               email: person.emailAddress || '',
+              password: '', // clear password input field during edit
             });
             if (person.geometryDataJson) {
               try {
@@ -68,8 +72,8 @@ export default function Registration() {
         }
       } else {
         setFormData((prev) => {
-          if (prev.fullName === '' && prev.phone === '' && prev.email === '') return prev;
-          return { fullName: '', phone: '', email: '' };
+          if (prev.fullName === '' && prev.phone === '' && prev.email === '' && prev.password === '') return prev;
+          return { fullName: '', phone: '', email: '', password: '' };
         });
         setGeometryData((prev) => {
           if (prev === null) return prev;
@@ -81,7 +85,7 @@ export default function Registration() {
     return () => {
       active = false;
     };
-  }, [id, navigate, toast]);
+  }, [id, navigate, toast, authFetch]);
 
   const handleInputChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -100,6 +104,11 @@ export default function Registration() {
       return;
     }
 
+    if (!id && !formData.password) {
+      toast.error("Please choose a password for registration.");
+      return;
+    }
+
     if (!NAME_REGEX.test(formData.fullName)) {
       toast.error("Invalid Name: Names can only contain letters, spaces, hyphens, and apostrophes (2-100 characters).");
       return;
@@ -115,6 +124,11 @@ export default function Registration() {
       return;
     }
 
+    if (formData.password && formData.password.length < 6) {
+      toast.error("Password must be at least 6 characters long.");
+      return;
+    }
+
     // Capitalize the first letter of the shape type (e.g. 'circle' -> 'Circle') for database consistency
     const shapeTypeFormatted = geometryData.type.charAt(0).toUpperCase() + geometryData.type.slice(1);
 
@@ -126,24 +140,47 @@ export default function Registration() {
       geometryDataJson: JSON.stringify(geometryData.coordinates),
     };
 
+    if (formData.password) {
+      payload.password = formData.password;
+    }
+
     const isEditMode = !!id;
     const url = isEditMode 
       ? `http://localhost:5000/api/person/${id}`
       : 'http://localhost:5000/api/person';
-    const method = isEditMode ? 'PUT' : 'POST';
 
     try {
-      const response = await fetch(url, {
-        method: method,
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload),
-      });
+      let response;
+      if (isEditMode) {
+        response = await authFetch(url, {
+          method: 'PUT',
+          body: JSON.stringify(payload),
+        });
+      } else {
+        response = await fetch(url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(payload),
+        });
+      }
 
       if (response.ok) {
-        toast.success(isEditMode ? "Person details updated successfully!" : "Person registered successfully!");
-        navigate('/');
+        toast.success(isEditMode ? "Profile and shape details updated!" : "Registration successful!");
+        if (isEditMode) {
+          navigate('/');
+        } else {
+          // Attempt automatic login after registration
+          try {
+            await login(formData.email, formData.password);
+            toast.info("Logged in automatically!");
+            navigate('/');
+          } catch (loginErr) {
+            console.error("Auto login failed:", loginErr);
+            navigate('/login');
+          }
+        }
       } else {
         const errorData = await response.json().catch(() => ({}));
         toast.error(errorData.detail || errorData.message || "Failed to save person record.");
@@ -166,7 +203,7 @@ export default function Registration() {
           <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
           <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
         </svg>
-        <span className="text-sm font-medium tracking-wide">Loading person details...</span>
+        <span className="text-sm font-medium tracking-wide">Loading profile details...</span>
       </div>
     );
   }
@@ -175,9 +212,9 @@ export default function Registration() {
     <section className="bg-stone-900 justify-center items-center h-[calc(100vh-80px)] flex overflow-hidden">
       {/* Left Form Panel */}
       <div className="w-1/3 h-full flex justify-center items-center p-6 border-r border-stone-850 bg-stone-900">
-        <div className="flex flex-col items-center gap-6 p-8 w-full max-w-md rounded-2xl bg-stone-800 border border-stone-700/60 shadow-2xl">
+        <div className="flex flex-col items-center gap-6 p-8 w-full max-w-md rounded-2xl bg-stone-800 border border-stone-700/60 shadow-2xl overflow-y-auto max-h-[90%]">
           <h3 className="text-2xl font-bold tracking-tight text-stone-100">
-            {id ? "Edit Person Details" : "Register New Person"}
+            {id ? "Edit My Profile" : "Register & Draw"}
           </h3>
           
           <form onSubmit={handleSubmit} className="flex flex-col space-y-4 items-center w-full">
@@ -190,10 +227,9 @@ export default function Registration() {
                 value={formData.fullName}
                 onChange={handleInputChange}
                 placeholder="E.g. John Doe" 
-                className="bg-stone-950 border border-stone-750 rounded-lg p-2.5 text-sm text-stone-100 placeholder-stone-500 focus:outline-none focus:border-olive-500 transition-colors disabled:opacity-60 disabled:cursor-not-allowed disabled:border-stone-800 disabled:bg-stone-950/40"
+                className="bg-stone-950 border border-stone-750 rounded-lg p-2.5 text-sm text-stone-100 placeholder-stone-500 focus:outline-none focus:border-olive-500 transition-colors"
                 pattern="^[a-zA-Z\s\-']{2,100}$"
                 title="Name can only contain letters, spaces, hyphens, and apostrophes (between 2 and 100 characters)."
-                disabled={!!id}
                 required
               />
             </div>
@@ -207,10 +243,9 @@ export default function Registration() {
                 value={formData.phone}
                 onChange={handleInputChange}
                 placeholder="E.g. 9876543210" 
-                className="bg-stone-950 border border-stone-750 rounded-lg p-2.5 text-sm text-stone-100 placeholder-stone-500 focus:outline-none focus:border-olive-500 transition-colors disabled:opacity-60 disabled:cursor-not-allowed disabled:border-stone-800 disabled:bg-stone-950/40"
+                className="bg-stone-950 border border-stone-750 rounded-lg p-2.5 text-sm text-stone-100 placeholder-stone-500 focus:outline-none focus:border-olive-500 transition-colors"
                 pattern="^[0-9]{10}$"
                 title="Phone number must be exactly 10 digits."
-                disabled={!!id}
                 required
               />
             </div>
@@ -224,11 +259,27 @@ export default function Registration() {
                 value={formData.email}
                 onChange={handleInputChange}
                 placeholder="E.g. xyz@abc.com" 
-                className="bg-stone-950 border border-stone-750 rounded-lg p-2.5 text-sm text-stone-100 placeholder-stone-500 focus:outline-none focus:border-olive-500 transition-colors disabled:opacity-60 disabled:cursor-not-allowed disabled:border-stone-800 disabled:bg-stone-950/40"
-                pattern="^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
+                className="bg-stone-950 border border-stone-750 rounded-lg p-2.5 text-sm text-stone-100 placeholder-stone-500 focus:outline-none focus:border-olive-500 transition-colors"
+                pattern="^[a-zA-Z0-9._%\+\-]+@[a-zA-Z0-9\.\-]+\.[a-zA-Z]{2,}$"
                 title="Please enter a valid email address (e.g. user@domain.com)."
-                disabled={!!id}
                 required
+              />
+            </div>
+
+            <div className="flex flex-col space-y-1.5 w-full">
+              <label htmlFor="password" className="text-xs font-semibold text-stone-300">
+                {id ? "Change Password (Optional)" : "Password"}
+              </label>
+              <input 
+                type="password" 
+                id="password" 
+                name="password" 
+                value={formData.password}
+                onChange={handleInputChange}
+                placeholder={id ? "Leave blank to keep unchanged" : "At least 6 characters"} 
+                className="bg-stone-950 border border-stone-750 rounded-lg p-2.5 text-sm text-stone-100 placeholder-stone-500 focus:outline-none focus:border-olive-500 transition-colors"
+                minLength="6"
+                required={!id}
               />
             </div>
             
@@ -250,7 +301,7 @@ export default function Registration() {
             <div className="flex gap-3 w-full mt-4">
               <button 
                 type="button" 
-                onClick={() => navigate('/')}
+                onClick={() => navigate(isAuthenticated ? '/' : '/login')}
                 className="flex-1 bg-stone-700 hover:bg-stone-600 text-stone-100 font-semibold py-2.5 rounded-xl transition-all duration-200 cursor-pointer text-center text-sm shadow-md"
               >
                 Cancel
@@ -262,6 +313,15 @@ export default function Registration() {
                 Save
               </button>
             </div>
+
+            {!isAuthenticated && (
+              <div className="text-center text-xs text-stone-400 mt-2">
+                Already registered?{' '}
+                <Link to="/login" className="text-olive-400 hover:text-olive-300 font-semibold transition-colors">
+                  Log in here
+                </Link>
+              </div>
+            )}
           </form>
         </div>
       </div>

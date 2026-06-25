@@ -4,6 +4,7 @@ import { AgGridReact } from 'ag-grid-react';
 import { ModuleRegistry, themeQuartz, colorSchemeDark } from 'ag-grid-community';
 import { AllCommunityModule } from 'ag-grid-community';
 import { useToast } from './toastContext.jsx';
+import { useAuth } from './authContext.jsx';
 
 // Register AG Grid Community modules
 ModuleRegistry.registerModules([AllCommunityModule]);
@@ -31,12 +32,13 @@ export default function PersonGrid() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const toast = useToast();
+  const { authFetch, user } = useAuth();
 
   const fetchPersons = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch('http://localhost:5000/api/person');
+      const response = await authFetch('http://localhost:5000/api/person');
       if (response.ok) {
         const data = await response.json();
         setRowData(data);
@@ -54,7 +56,7 @@ export default function PersonGrid() {
     } finally {
       setLoading(false);
     }
-  }, [toast]);
+  }, [toast, authFetch]);
 
   useEffect(() => {
     let active = true;
@@ -78,7 +80,7 @@ export default function PersonGrid() {
           onClick={() => navigate(`/edit/${params.data.id}`)} 
           className="bg-olive-600 hover:bg-olive-500 text-stone-50 text-xs font-semibold px-3 py-1 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 cursor-pointer border border-olive-500/30"
         >
-          View / Edit
+          View / Edit Map
         </button>
       </div>
     );
@@ -122,23 +124,25 @@ export default function PersonGrid() {
       <div className="flex justify-between items-center mb-6">
         <div>
           <h2 className="text-3xl font-extrabold tracking-tight bg-linear-to-r from-stone-100 via-stone-300 to-olive-400 bg-clip-text text-transparent">
-            Registered Persons Directory
+            My Registered Map Profile
           </h2>
           <p className="text-stone-400 text-sm mt-1">
-            Browse, search, and manage registered entities and their designated map shapes.
+            Browse and manage your registered details and designated map shape.
           </p>
         </div>
-        <button
-          onClick={() => navigate('/register')}
-          className="relative group overflow-hidden bg-olive-650 text-white font-medium px-5 py-2.5 rounded-xl shadow-lg hover:shadow-olive-500/25 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 cursor-pointer"
-        >
-          <span className="relative z-10 flex items-center gap-2">
-            <svg className="w-5 h-5 text-stone-100" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
-            Add New Person
-          </span>
-        </button>
+        {user?.id && (
+          <button
+            onClick={() => navigate(`/edit/${user.id}`)}
+            className="relative group overflow-hidden bg-olive-655 text-white font-medium px-5 py-2.5 rounded-xl shadow-lg hover:shadow-olive-500/25 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 cursor-pointer"
+          >
+            <span className="relative z-10 flex items-center gap-2">
+              <svg className="w-5 h-5 text-stone-100" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+              </svg>
+              Edit My Map Shape
+            </span>
+          </button>
+        )}
       </div>
 
       {/* Grid Panel with glassmorphism border wrapper */}
