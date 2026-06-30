@@ -29,8 +29,18 @@ try
     builder.Services.AddOpenApi();
 
     // Register the Database Context
+    var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
     builder.Services.AddDbContext<AppDbContext>(options =>
-        options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
+    {
+        if (connectionString != null && (connectionString.Contains("Server=") || connectionString.Contains("server=")))
+        {
+            options.UseSqlServer(connectionString);
+        }
+        else
+        {
+            options.UseSqlite(connectionString);
+        }
+    });
 
     // Configure JWT Authentication
     var jwtKey = builder.Configuration["Jwt:Key"] ?? "superSecretKeyOfAtLeast32BytesLengthNeededForSigningJWTs!!";
@@ -95,6 +105,9 @@ try
 
     app.UseHttpsRedirection();
 
+    app.UseDefaultFiles();
+    app.UseStaticFiles();
+
     // Enable CORS
     app.UseCors("AllowFrontend");
 
@@ -104,6 +117,7 @@ try
 
     // Map Controller routes
     app.MapControllers();
+    app.MapFallbackToFile("index.html");
 
     app.Run();
 }

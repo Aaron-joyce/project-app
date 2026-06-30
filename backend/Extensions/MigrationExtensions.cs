@@ -13,7 +13,14 @@ public static class MigrationExtensions
         try
         {
             var context = services.GetRequiredService<AppDbContext>();
-            context.Database.Migrate();
+            if (context.Database.ProviderName == "Microsoft.EntityFrameworkCore.SqlServer")
+            {
+                context.Database.EnsureCreated();
+            }
+            else
+            {
+                context.Database.Migrate();
+            }
         }
         catch (Exception ex)
         {
