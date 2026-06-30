@@ -14,14 +14,14 @@ namespace backend.Tests;
 public class PersonControllerTest
 {
 
-    private readonly Mock<IPersonService> mockServicce;
+    private readonly Mock<IPersonService> mockService;
     private readonly Mock<ILogger<PersonController>> mockLogger;
     private readonly PersonController personController;
     private readonly Guid testId;
 
     public PersonControllerTest()
     {
-        mockServicce = new Mock<IPersonService>();
+        mockService = new Mock<IPersonService>();
         mockLogger = new Mock<ILogger<PersonController>>();
         testId = Guid.NewGuid();
 
@@ -38,7 +38,7 @@ public class PersonControllerTest
             HttpContext = new DefaultHttpContext {User = claimsPrincipal}
         };
 
-        personController = new PersonController(mockServicce.Object, mockLogger.Object)
+        personController = new PersonController(mockService.Object, mockLogger.Object)
         {
             ControllerContext = controllerContext
         };
@@ -55,7 +55,7 @@ public class PersonControllerTest
             new PersonResponseDto {FullName="Bob Jones", EmailAddress="bob@gmail.com"}
         };
 
-        mockServicce.Setup(service => service.GetAllPersonsAsync(testId)).ReturnsAsync(mockPersonList);
+        mockService.Setup(service => service.GetAllPersonsAsync(testId)).ReturnsAsync(mockPersonList);
         
         var result = await personController.GetPersons();
         var okResult = Assert.IsType<OkObjectResult>(result);
@@ -64,7 +64,7 @@ public class PersonControllerTest
         Assert.NotNull(returnedPersonList);
         Assert.Contains(returnedPersonList, p=>p.FullName=="Alice Smith");
 
-        mockServicce.Verify(s=>s.GetAllPersonsAsync(testId), Times.Once);
+        mockService.Verify(s=>s.GetAllPersonsAsync(testId), Times.Once);
         Console.WriteLine($"Test Passed. Returned:{returnedPersonList}");
     }
 
@@ -80,7 +80,7 @@ public class PersonControllerTest
             EmailAddress = "alice@gmail.com" 
         };
 
-        mockServicce.Setup(service => service.GetPersonByIdAsync(personId, testId))
+        mockService.Setup(service => service.GetPersonByIdAsync(personId, testId))
             .ReturnsAsync(mockPerson);
 
         var result = await personController.GetPersonById(personId);
@@ -90,7 +90,7 @@ public class PersonControllerTest
         Assert.Equal(personId, returnedPerson.Id);
         Assert.Equal("Alice Smith", returnedPerson.FullName);
 
-        mockServicce.Verify(s => s.GetPersonByIdAsync(personId, testId), Times.Once);
+        mockService.Verify(s => s.GetPersonByIdAsync(personId, testId), Times.Once);
         Console.WriteLine($"Test Passed. Person:{returnedPerson}");
     }
 
@@ -108,7 +108,7 @@ public class PersonControllerTest
         };
         var expectedPersonId = Guid.NewGuid();
 
-        mockServicce.Setup(service => service.RegisterPersonAsync(personDto))
+        mockService.Setup(service => service.RegisterPersonAsync(personDto))
             .ReturnsAsync(expectedPersonId);
 
         var result = await personController.RegisterPerson(personDto);
@@ -123,7 +123,7 @@ public class PersonControllerTest
         Assert.Equal("Registration saved successfully!", messageProperty);
         Assert.Equal(expectedPersonId, idProperty);
 
-        mockServicce.Verify(s => s.RegisterPersonAsync(personDto), Times.Once);
+        mockService.Verify(s => s.RegisterPersonAsync(personDto), Times.Once);
         Console.WriteLine($"Test Passed. Message:{messageProperty}");
     }
 
@@ -141,7 +141,7 @@ public class PersonControllerTest
             GeometryDataJson = "{}"
         };
 
-        mockServicce.Setup(service => service.UpdatePersonAsync(personId, personDto, testId))
+        mockService.Setup(service => service.UpdatePersonAsync(personId, personDto, testId))
             .Returns(Task.CompletedTask);
 
         var result = await personController.UpdatePerson(personId, personDto);
@@ -156,7 +156,7 @@ public class PersonControllerTest
         Assert.Equal("Person updated successfully!", messageProperty);
         Assert.Equal(personId, idProperty);
 
-        mockServicce.Verify(s => s.UpdatePersonAsync(personId, personDto, testId), Times.Once);
+        mockService.Verify(s => s.UpdatePersonAsync(personId, personDto, testId), Times.Once);
         Console.WriteLine($"Test Passed. Message:{messageProperty}");
     }
 }

@@ -47,13 +47,15 @@ frontend/bun.lockb
 # Build outputs
 backend/bin/
 backend/obj/
+backend/publish
 
 # User-specific files
 *.rsuser
 *.suo
 *.user
 *.userosscache
-*.sln.docstates
+*.sln.docstates]
+
 
 # .NET Core / Visual Studio caching
 .vs/

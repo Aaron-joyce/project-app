@@ -32,7 +32,8 @@ export default function Registration() {
       if (id) {
         setLoading(true);
         try {
-          const response = await authFetch(`http://localhost:5000/api/person/${id}`);
+          const apiUrl = import.meta.env.VITE_API_URL || '';
+          const response = await authFetch(`${apiUrl}/api/person/${id}`);
           if (response.ok && active) {
             const person = await response.json();
             setFormData({
@@ -145,9 +146,10 @@ export default function Registration() {
     }
 
     const isEditMode = !!id;
+    const apiUrl = import.meta.env.VITE_API_URL || '';
     const url = isEditMode 
-      ? `http://localhost:5000/api/person/${id}`
-      : 'http://localhost:5000/api/person';
+      ? `${apiUrl}/api/person/${id}`
+      : `${apiUrl}/api/person`;
 
     try {
       let response;

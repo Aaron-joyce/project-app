@@ -38,7 +38,8 @@ export default function PersonGrid() {
     setLoading(true);
     setError(null);
     try {
-      const response = await authFetch('http://localhost:5000/api/person');
+      const apiUrl = import.meta.env.VITE_API_URL || '';
+      const response = await authFetch(`${apiUrl}/api/person`);
       if (response.ok) {
         const data = await response.json();
         setRowData(data);
