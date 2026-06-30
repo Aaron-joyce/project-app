@@ -19,6 +19,8 @@ jobs:
         with:
           submodules: true
           lfs: false
+        env: 
+          VITE_API_URL: "web-app-api-ghfmdweuf7h7ezen.centralindia-01.azurewebsites.net"
       - name: Build And Deploy
         id: builddeploy
         uses: Azure/static-web-apps-deploy@v1
