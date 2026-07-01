@@ -36,7 +36,7 @@ public class PersonService : IPersonService
     {
         _logger.LogInformation("Service Layer: Retrieving only user details for ID: {UserId}.", currentUserId);
         return await _context.Persons
-            .Include(p => p.MapDrawing)
+            .Include(p => p.MapDrawings)
             .Where(p => p.Id == currentUserId) // Restrict view to only current logged-in user
             .Select(p => new PersonResponseDto
             {
@@ -44,8 +44,14 @@ public class PersonService : IPersonService
                 FullName = p.FullName,
                 PhoneNumber = p.PhoneNumber,
                 EmailAddress = p.EmailAddress,
-                ShapeType = p.MapDrawing != null ? p.MapDrawing.ShapeType : string.Empty,
-                GeometryDataJson = p.MapDrawing != null ? p.MapDrawing.GeometryDataJson : string.Empty,
+                Drawings = p.MapDrawings.Select(d => new MapDrawingDto
+                {
+                    Id = d.Id,
+                    ShapeType = d.ShapeType,
+                    GeometryDataJson = d.GeometryDataJson,
+                    Name = d.Name,
+                    CreatedAt = d.CreatedAt
+                }).ToList(),
                 CreatedAt = p.CreatedAt
             })
             .ToListAsync();
@@ -62,7 +68,7 @@ public class PersonService : IPersonService
         }
 
         var person = await _context.Persons
-            .Include(p => p.MapDrawing)
+            .Include(p => p.MapDrawings)
             .FirstOrDefaultAsync(p => p.Id == id);
 
         if (person == null)
@@ -77,8 +83,14 @@ public class PersonService : IPersonService
             FullName = person.FullName,
             PhoneNumber = person.PhoneNumber,
             EmailAddress = person.EmailAddress,
-            ShapeType = person.MapDrawing != null ? person.MapDrawing.ShapeType : string.Empty,
-            GeometryDataJson = person.MapDrawing != null ? person.MapDrawing.GeometryDataJson : string.Empty,
+            Drawings = person.MapDrawings.Select(d => new MapDrawingDto
+            {
+                Id = d.Id,
+                ShapeType = d.ShapeType,
+                GeometryDataJson = d.GeometryDataJson,
+                Name = d.Name,
+                CreatedAt = d.CreatedAt
+            }).ToList(),
             CreatedAt = person.CreatedAt
         };
     }
@@ -106,13 +118,20 @@ public class PersonService : IPersonService
             FullName = dto.FullName,
             PhoneNumber = dto.PhoneNumber,
             EmailAddress = dto.EmailAddress,
-            MapDrawing = new MapDrawing
+            MapDrawings = new List<MapDrawing>()
+        };
+
+        if (!string.IsNullOrEmpty(dto.ShapeType) && !string.IsNullOrEmpty(dto.GeometryDataJson))
+        {
+            person.MapDrawings.Add(new MapDrawing
             {
+                Id = Guid.NewGuid(),
                 PersonId = personId,
                 ShapeType = dto.ShapeType,
-                GeometryDataJson = dto.GeometryDataJson
-            }
-        };
+                GeometryDataJson = dto.GeometryDataJson,
+                Name = "Default Map"
+            });
+        }
 
         // Hash the password before saving
         person.PasswordHash = _passwordHasher.HashPassword(person, dto.Password);
@@ -135,7 +154,7 @@ public class PersonService : IPersonService
         }
 
         var person = await _context.Persons
-            .Include(p => p.MapDrawing)
+            .Include(p => p.MapDrawings)
             .FirstOrDefaultAsync(p => p.Id == id);
 
         if (person == null)
@@ -161,19 +180,29 @@ public class PersonService : IPersonService
             person.PasswordHash = _passwordHasher.HashPassword(person, dto.Password);
         }
 
-        if (person.MapDrawing == null)
+        if (!string.IsNullOrEmpty(dto.ShapeType) && !string.IsNullOrEmpty(dto.GeometryDataJson))
         {
-            person.MapDrawing = new MapDrawing
+            var firstDrawing = person.MapDrawings.FirstOrDefault();
+            if (firstDrawing == null)
             {
-                PersonId = id,
-                ShapeType = dto.ShapeType,
-                GeometryDataJson = dto.GeometryDataJson
-            };
-        }
-        else
-        {
-            person.MapDrawing.ShapeType = dto.ShapeType;
-            person.MapDrawing.GeometryDataJson = dto.GeometryDataJson;
+                person.MapDrawings.Add(new MapDrawing
+                {
+                    Id = Guid.NewGuid(),
+                    PersonId = id,
+                    ShapeType = dto.ShapeType,
+                    GeometryDataJson = dto.GeometryDataJson,
+                    Name = "Default Map"
+                });
+            }
+            else
+            {
+                firstDrawing.ShapeType = dto.ShapeType;
+                firstDrawing.GeometryDataJson = dto.GeometryDataJson;
+                if (string.IsNullOrEmpty(firstDrawing.Name))
+                {
+                    firstDrawing.Name = "Default Map";
+                }
+            }
         }
 
         await _context.SaveChangesAsync();
@@ -228,5 +257,68 @@ public class PersonService : IPersonService
             EmailAddress = person.EmailAddress,
             FullName = person.FullName
         };
+    }
+
+    public async Task<Guid> AddDrawingAsync(Guid personId, MapDrawingDto dto)
+    {
+        _logger.LogInformation("Service Layer: Adding new drawing for person ID: {PersonId}", personId);
+
+        var personExists = await _context.Persons.AnyAsync(p => p.Id == personId);
+        if (!personExists)
+        {
+            throw new EntityNotFoundException($"Person with ID {personId} not found.");
+        }
+
+        var drawing = new MapDrawing
+        {
+            Id = Guid.NewGuid(),
+            PersonId = personId,
+            ShapeType = dto.ShapeType,
+            GeometryDataJson = dto.GeometryDataJson,
+            Name = dto.Name
+        };
+
+        _context.MapDrawings.Add(drawing);
+        await _context.SaveChangesAsync();
+
+        _logger.LogInformation("Service Layer: Added drawing ID: {DrawingId} to person ID: {PersonId}", drawing.Id, personId);
+        return drawing.Id;
+    }
+
+    public async Task UpdateDrawingAsync(Guid personId, Guid drawingId, MapDrawingDto dto)
+    {
+        _logger.LogInformation("Service Layer: Updating drawing ID: {DrawingId} for person ID: {PersonId}", drawingId, personId);
+
+        var drawing = await _context.MapDrawings
+            .FirstOrDefaultAsync(d => d.Id == drawingId && d.PersonId == personId);
+
+        if (drawing == null)
+        {
+            throw new EntityNotFoundException($"Drawing with ID {drawingId} not found for this person.");
+        }
+
+        drawing.ShapeType = dto.ShapeType;
+        drawing.GeometryDataJson = dto.GeometryDataJson;
+        drawing.Name = dto.Name;
+
+        await _context.SaveChangesAsync();
+        _logger.LogInformation("Service Layer: Updated drawing ID: {DrawingId} for person ID: {PersonId}", drawingId, personId);
+    }
+
+    public async Task DeleteDrawingAsync(Guid personId, Guid drawingId)
+    {
+        _logger.LogInformation("Service Layer: Deleting drawing ID: {DrawingId} for person ID: {PersonId}", drawingId, personId);
+
+        var drawing = await _context.MapDrawings
+            .FirstOrDefaultAsync(d => d.Id == drawingId && d.PersonId == personId);
+
+        if (drawing == null)
+        {
+            throw new EntityNotFoundException($"Drawing with ID {drawingId} not found for this person.");
+        }
+
+        _context.MapDrawings.Remove(drawing);
+        await _context.SaveChangesAsync();
+        _logger.LogInformation("Service Layer: Deleted drawing ID: {DrawingId} for person ID: {PersonId}", drawingId, personId);
     }
 }

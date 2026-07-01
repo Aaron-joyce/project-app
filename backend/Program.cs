@@ -34,7 +34,8 @@ try
     {
         if (connectionString != null && (connectionString.Contains("Server=") || connectionString.Contains("server=")))
         {
-            options.UseSqlServer(connectionString);
+            options.UseSqlServer(connectionString, sqlOptions => 
+                sqlOptions.EnableRetryOnFailure());
         }
         else
         {

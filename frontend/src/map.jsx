@@ -141,9 +141,87 @@ const DrawingManagerControl = ({ onShapeComplete, initialShape }) => {
   return null;
 };
  
+const SavedOverlays = ({ drawings }) => {
+  const map = useMap();
+  const overlaysRef = useRef([]);
+
+  useEffect(() => {
+    if (!map || !drawings) return;
+
+    // Clear existing overlays
+    overlaysRef.current.forEach(o => o.setMap(null));
+    overlaysRef.current = [];
+
+    // Draw new overlays
+    drawings.forEach(d => {
+      const type = d.shapeType.toLowerCase();
+      let coords;
+      try {
+        coords = typeof d.geometryDataJson === 'string' ? JSON.parse(d.geometryDataJson) : d.geometryDataJson;
+      } catch(e) {
+        console.error("Failed to parse coordinates for drawing", d, e);
+        return;
+      }
+
+      let overlay = null;
+      if (type === 'circle') {
+        overlay = new window.google.maps.Circle({
+          center: coords.center,
+          radius: coords.radius,
+          editable: false,
+          clickable: true,
+          map: map,
+          fillColor: '#618266',
+          strokeColor: '#4d6951',
+          fillOpacity: 0.35,
+          strokeWeight: 2
+        });
+      } else if (type === 'rectangle') {
+        overlay = new window.google.maps.Rectangle({
+          bounds: {
+            north: coords.northEast.lat,
+            east: coords.northEast.lng,
+            south: coords.southWest.lat,
+            west: coords.southWest.lng
+          },
+          editable: false,
+          clickable: true,
+          map: map,
+          fillColor: '#618266',
+          strokeColor: '#4d6951',
+          fillOpacity: 0.35,
+          strokeWeight: 2
+        });
+      } else if (type === 'polygon') {
+        overlay = new window.google.maps.Polygon({
+          paths: coords,
+          editable: false,
+          clickable: true,
+          map: map,
+          fillColor: '#618266',
+          strokeColor: '#4d6951',
+          fillOpacity: 0.35,
+          strokeWeight: 2
+        });
+      }
+
+      if (overlay) {
+        overlaysRef.current.push(overlay);
+      }
+    });
+
+    return () => {
+      overlaysRef.current.forEach(o => o.setMap(null));
+      overlaysRef.current = [];
+    };
+  }, [map, drawings]);
+
+  return null;
+};
+
 const MAPS_API_KEY = ""; // Configure Google Maps API Key here
 
-function MapComponent({ onShapeSelect, initialShape }) {
+function MapComponent({ onShapeSelect, initialShape, savedDrawings }) {
   return (
     <div className="h-full w-full relative">
       <APIProvider apiKey={MAPS_API_KEY} version="3.64" libraries={['drawing']}>
@@ -154,6 +232,7 @@ function MapComponent({ onShapeSelect, initialShape }) {
           style={{ width: '100%', height: '100%' }}
         >
           <DrawingManagerControl onShapeComplete={onShapeSelect} initialShape={initialShape} />
+          <SavedOverlays drawings={savedDrawings} />
         </Map>
       </APIProvider>
     </div>

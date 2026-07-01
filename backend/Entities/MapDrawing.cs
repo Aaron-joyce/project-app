@@ -18,6 +18,10 @@ public class MapDrawing
     public string ShapeType { get; set; } = string.Empty;
 
     [Required]
+    [MaxLength(100)]
+    public string Name { get; set; } = string.Empty;
+
+    [Required]
     public string GeometryDataJson { get; set; } = string.Empty;
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

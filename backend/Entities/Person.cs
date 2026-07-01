@@ -25,6 +25,6 @@ public class Person
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
-    // Navigation property for 1-to-1 relationship with MapDrawing
-    public MapDrawing? MapDrawing { get; set; }
+    // Navigation property for 1-to-many relationship with MapDrawings
+    public ICollection<MapDrawing> MapDrawings { get; set; } = new List<MapDrawing>();
 }

@@ -22,9 +22,7 @@ public class PersonDto
     [StringLength(100, MinimumLength = 6, ErrorMessage = "Password must be at least 6 characters long.")]
     public string? Password { get; set; }
 
-    [Required(ErrorMessage = "Shape Type is required.")]
-    public string ShapeType { get; set; } = string.Empty;
+    public string? ShapeType { get; set; }
 
-    [Required(ErrorMessage = "Geometry Data is required.")]
-    public string GeometryDataJson { get; set; } = string.Empty;
+    public string? GeometryDataJson { get; set; }
 }

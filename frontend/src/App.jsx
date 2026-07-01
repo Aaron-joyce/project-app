@@ -2,6 +2,7 @@ import { Routes, Route, NavLink, useLocation, Navigate } from 'react-router-dom'
 import Registration from './registration.jsx';
 import PersonGrid from './personGrid.jsx';
 import Login from './login.jsx';
+import AddMap from './addMap.jsx';
 import { useAuth } from './authContext.jsx';
 
 export default function App() {
@@ -86,6 +87,7 @@ export default function App() {
         <Routes>
           <Route path="/" element={<PersonGrid />} />
           <Route path="/edit/:id" element={<Registration />} />
+          <Route path="/add-map" element={<AddMap />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>

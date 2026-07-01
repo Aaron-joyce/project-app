@@ -16,6 +16,26 @@ public static class MigrationExtensions
             if (context.Database.ProviderName == "Microsoft.EntityFrameworkCore.SqlServer")
             {
                 context.Database.EnsureCreated();
+                try
+                {
+                    context.Database.ExecuteSqlRaw(
+                        "IF EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_MapDrawings_PersonId' AND object_id = OBJECT_ID('MapDrawings')) " +
+                        "DROP INDEX IX_MapDrawings_PersonId ON MapDrawings;");
+                    
+                    context.Database.ExecuteSqlRaw(
+                        "IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_MapDrawings_PersonId' AND object_id = OBJECT_ID('MapDrawings')) " +
+                        "CREATE INDEX IX_MapDrawings_PersonId ON MapDrawings(PersonId);");
+
+                    context.Database.ExecuteSqlRaw(
+                        "IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('MapDrawings') AND name = 'Name') " +
+                        "ALTER TABLE MapDrawings ADD Name nvarchar(100) NOT NULL DEFAULT 'Default Map';");
+                }
+                catch (Exception ex)
+                {
+                    var loggerFactory = services.GetRequiredService<ILoggerFactory>();
+                    var logger = loggerFactory.CreateLogger("MigrationExtensions");
+                    logger.LogWarning(ex, "Failed to drop unique index on SQL Server. It may have already been dropped.");
+                }
             }
             else
             {

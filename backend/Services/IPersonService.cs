@@ -12,4 +12,7 @@ public interface IPersonService
     Task<Guid> RegisterPersonAsync(PersonDto dto);
     Task UpdatePersonAsync(Guid id, PersonDto dto, Guid currentUserId);
     Task<LoginResponseDto> AuthenticateAsync(LoginDto loginDto);
+    Task<Guid> AddDrawingAsync(Guid personId, MapDrawingDto dto);
+    Task UpdateDrawingAsync(Guid personId, Guid drawingId, MapDrawingDto dto);
+    Task DeleteDrawingAsync(Guid personId, Guid drawingId);
 }

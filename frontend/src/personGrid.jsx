@@ -34,6 +34,27 @@ export default function PersonGrid() {
   const toast = useToast();
   const { authFetch, user } = useAuth();
 
+  const handleDeleteMap = async (mapId) => {
+    if (!window.confirm("Are you sure you want to delete this map drawing?")) return;
+    try {
+      const apiUrl = import.meta.env.VITE_API_URL || '';
+      const response = await authFetch(`${apiUrl}/api/drawings/${mapId}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        toast.success("Map drawing deleted successfully!");
+        setRowData(prev => prev.filter(row => row.id !== mapId));
+      } else {
+        const errorData = await response.json().catch(() => ({}));
+        toast.error(errorData.detail || errorData.message || "Failed to delete map drawing.");
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("Network error: Could not connect to delete endpoint.");
+    }
+  };
+
   const fetchPersons = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -42,7 +63,8 @@ export default function PersonGrid() {
       const response = await authFetch(`${apiUrl}/api/person`);
       if (response.ok) {
         const data = await response.json();
-        setRowData(data);
+        const currentUser = data[0];
+        setRowData(currentUser ? currentUser.drawings : []);
       } else {
         const errorData = await response.json().catch(() => ({}));
         const errorMsg = errorData.detail || errorData.message || "Failed to load directory data.";
@@ -78,19 +100,18 @@ export default function PersonGrid() {
     return (
       <div className="flex gap-2 items-center h-full">
         <button 
-          onClick={() => navigate(`/edit/${params.data.id}`)} 
-          className="bg-olive-600 hover:bg-olive-500 text-stone-50 text-xs font-semibold px-3 py-1 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 cursor-pointer border border-olive-500/30"
+          onClick={() => handleDeleteMap(params.data.id)} 
+          className="bg-red-900/40 hover:bg-red-900/60 text-red-200 text-xs font-semibold px-3 py-1 rounded-lg border border-red-900/30 transition-all duration-200 cursor-pointer shadow-md hover:shadow-lg"
         >
-          View / Edit Map
+          Delete Map
         </button>
       </div>
     );
   };
 
   const columnDefs = [
-    { field: 'fullName', headerName: 'Full Name', sortable: true, filter: true, flex: 1.2, minWidth: 150 },
-    { field: 'phoneNumber', headerName: 'Phone Number', sortable: true, filter: true, flex: 1, minWidth: 130 },
-    { field: 'emailAddress', headerName: 'Email Address', sortable: true, filter: true, flex: 1.3, minWidth: 180 },
+    { field: 'name', headerName: 'Map Name', sortable: true, filter: true, flex: 1.2, minWidth: 150 },
+    { field: 'id', headerName: 'Map ID', sortable: true, filter: true, flex: 1, minWidth: 130 },
     { 
       field: 'shapeType', 
       headerName: 'Shape Type', 
@@ -110,9 +131,45 @@ export default function PersonGrid() {
       }
     },
     { 
+      field: 'geometryDataJson', 
+      headerName: 'Coordinates / Bounds', 
+      sortable: false, 
+      filter: true, 
+      flex: 2, 
+      minWidth: 250,
+      cellRenderer: (params) => {
+        try {
+          const coords = JSON.parse(params.value);
+          if (params.data.shapeType === 'Circle') {
+            return `Center: (${coords.center.lat.toFixed(4)}, ${coords.center.lng.toFixed(4)}), Radius: ${Math.round(coords.radius)}m`;
+          }
+          if (params.data.shapeType === 'Rectangle') {
+            return `NE: (${coords.northEast.lat.toFixed(4)}, ${coords.northEast.lng.toFixed(4)}), SW: (${coords.southWest.lat.toFixed(4)}, ${coords.southWest.lng.toFixed(4)})`;
+          }
+          if (params.data.shapeType === 'Polygon') {
+            return `${coords.length} vertices: [(${coords[0].lat.toFixed(4)}, ${coords[0].lng.toFixed(4)}), ...]`;
+          }
+          return params.value;
+        } catch (e) {
+          return "Invalid Geometry Data";
+        }
+      }
+    },
+    { 
+      field: 'createdAt', 
+      headerName: 'Created At', 
+      sortable: true, 
+      filter: true, 
+      flex: 1, 
+      minWidth: 130,
+      cellRenderer: (params) => {
+        return new Date(params.value).toLocaleDateString();
+      }
+    },
+    { 
       headerName: 'Actions', 
       cellRenderer: ActionButtonRenderer, 
-      width: 140, 
+      width: 120, 
       sortable: false, 
       filter: false,
       suppressMovable: true
@@ -125,25 +182,38 @@ export default function PersonGrid() {
       <div className="flex justify-between items-center mb-6">
         <div>
           <h2 className="text-3xl font-extrabold tracking-tight bg-linear-to-r from-stone-100 via-stone-300 to-olive-400 bg-clip-text text-transparent">
-            My Registered Map Profile
+            My Saved Maps
           </h2>
           <p className="text-stone-400 text-sm mt-1">
-            Browse and manage your registered details and designated map shape.
+            Browse and manage your registered details and designated map shapes.
           </p>
         </div>
-        {user?.id && (
+        <div className="flex gap-3">
+          {user?.id && (
+            <button
+              onClick={() => navigate(`/edit/${user.id}`)}
+              className="relative group overflow-hidden bg-stone-800 border border-stone-700/60 text-stone-300 font-medium px-5 py-2.5 rounded-xl shadow-md hover:bg-stone-750 transition-all duration-200 cursor-pointer"
+            >
+              <span className="relative z-10 flex items-center gap-2 text-xs">
+                <svg className="w-4 h-4 text-stone-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+                Edit Profile
+              </span>
+            </button>
+          )}
           <button
-            onClick={() => navigate(`/edit/${user.id}`)}
+            onClick={() => navigate('/add-map')}
             className="relative group overflow-hidden bg-olive-655 text-white font-medium px-5 py-2.5 rounded-xl shadow-lg hover:shadow-olive-500/25 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 cursor-pointer"
           >
-            <span className="relative z-10 flex items-center gap-2">
-              <svg className="w-5 h-5 text-stone-100" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+            <span className="relative z-10 flex items-center gap-2 text-xs">
+              <svg className="w-4 h-4 text-stone-100" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
               </svg>
-              Edit My Map Shape
+              Add Map
             </span>
           </button>
-        )}
+        </div>
       </div>
 
       {/* Grid Panel with glassmorphism border wrapper */}

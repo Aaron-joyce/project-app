@@ -96,7 +96,7 @@ export default function Login() {
         <div className="mt-6 text-center text-xs text-stone-400">
           Not registered yet?{' '}
           <Link to="/register" className="text-olive-400 hover:text-olive-300 font-semibold transition-colors">
-            Register and Draw Map
+            Register here
           </Link>
         </div>
       </div>

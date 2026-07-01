@@ -16,11 +16,11 @@ public class AppDbContext : DbContext
     {
         base.OnModelCreating(modelBuilder);
 
-        // Configure 1-to-1 relationship with Cascade delete
+        // Configure 1-to-many relationship with Cascade delete
         modelBuilder.Entity<Person>()
-            .HasOne(p => p.MapDrawing)
+            .HasMany(p => p.MapDrawings)
             .WithOne(d => d.Person)
-            .HasForeignKey<MapDrawing>(d => d.PersonId)
+            .HasForeignKey(d => d.PersonId)
             .OnDelete(DeleteBehavior.Cascade);
     }
 }
