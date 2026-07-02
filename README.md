@@ -1,6 +1,9 @@
 # Person Registration & Map Drawing Application
 
+**Live Demo:** [https://mango-coast-09c5d4500.7.azurestaticapps.net](https://mango-coast-09c5d4500.7.azurestaticapps.net)
+
 A production-grade, full-stack web application that allows users to register individuals and draw custom geometric areas (polygons, rectangles, or circles) on an interactive Google Map. The system saves the user information and serializes shape coordinates in a normalized SQLite database.
+
 
 Built as an entry-to-mid-level .NET assessment, demonstrating clean coding practices, separation of concerns, global exception handling, secure API contracts, and concurrent file-rolling logging.
 
@@ -17,6 +20,7 @@ Built as an entry-to-mid-level .NET assessment, demonstrating clean coding pract
 *   **Interactive Toast Alerts:** Custom glassmorphic success and error notifications (success, error, info) with slide-in animations and automatic countdown dismissal.
 *   **Network & State Resilience:** Displays loading indicators and "Connection Failed" screens with a **Retry** button when the backend API is unreachable.
 *   **API Key Fallback:** Displays a user-friendly configuration warning overlay if the Google Maps API Key is not set, preventing client-side crashes.
+*   **Unit Testing Suite:** Integrated test environment with Bun's native test runner, Happy DOM, and React Testing Library for simulating interactive client behaviors and context scopes.
 
 ### Backend (ASP.NET Core / .NET 10)
 *   **Normalized Database Schema:** Decouples user data from drawing metadata by splitting storage into two related tables: `Persons` and `MapDrawings`.
@@ -39,6 +43,7 @@ Built as an entry-to-mid-level .NET assessment, demonstrating clean coding pract
 | **Styling** | Tailwind CSS v4 | Curated dark mode styling (Stone + Olive palette) |
 | **Grid** | AG Grid Community | Pagination and browsing directory |
 | **Maps** | @vis.gl/react-google-maps | React wrapper for Google Maps API |
+| **Testing (FE)** | Bun Test / Happy DOM | Frontend unit testing and DOM simulation |
 | **Backend** | ASP.NET Core API (.NET 10.0) | High-performance HTTP REST endpoints |
 | **ORM** | Entity Framework Core | Database migrations and mapping queries |
 | **Database** | SQLite | Lightweight, serverless local database store |
@@ -109,6 +114,13 @@ Make sure you have the following installed on your machine:
     bun run dev   # or npm run dev
     ```
     *   Open `http://localhost:5173` in your web browser.
+
+3.  **Run Frontend Tests:**
+    ```bash
+    cd frontend
+    bun test
+    ```
+
 
 ---
 

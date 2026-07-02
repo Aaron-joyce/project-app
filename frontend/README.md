@@ -1,16 +1,48 @@
-# React + Vite
+# Frontend - React + Vite Client
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+**Live Demo:** [https://mango-coast-09c5d4500.azurestaticapps.net](https://mango-coast-09c5d4500.azurestaticapps.net)
 
-Currently, two official plugins are available:
+This is the React single-page frontend client for the Person Registration and Map Drawing Application.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
 
-## React Compiler
+---
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## 🛠️ Key Technologies
+*   **Framework**: React 19 / Vite
+*   **Styling**: Tailwind CSS v4 (Sleek dark mode theme using HSL-tailored Stone & Olive palettes)
+*   **Data Grid**: AG Grid Community (interactive paginated data table)
+*   **Maps Integration**: `@vis.gl/react-google-maps` (declarative React components for Google Maps)
+*   **Routing**: `react-router-dom`
 
-## Expanding the ESLint configuration
+---
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## 🧪 Testing Infrastructure
+The client is equipped with a robust, browser-less unit testing environment powered by:
+*   **Test Runner**: Bun's native, high-performance test executor (`bun test`)
+*   **DOM Simulation**: Happy DOM (via `@happy-dom/global-registrator`) for lightning-fast virtual browser APIs
+*   **React Integration**: `@testing-library/react` and `@testing-library/jest-dom` for component assertion and user event triggers
+
+---
+
+## 📂 Project Structure
+*   `happydom.ts` - Registers Happy DOM global context before imports evaluation (avoids ESM hoisting order issues).
+*   `bun-setup.ts` - Sets up testing library assertions extension and automated cleanup after each test.
+*   `bunfig.toml` - Preloads `happydom.ts` and `bun-setup.ts` configurations.
+*   `src/` - Application source code containing views (`login.jsx`, `registration.jsx`, `map.jsx`, `personGrid.jsx`) and context boundaries.
+*   `src/login.test.jsx` - Core unit test verifying form entry, state changes, mock context execution, and navigation routing.
+
+---
+
+## 🚀 Commands & Scripts
+
+Make sure to install dependencies first using Bun:
+```bash
+bun install
+```
+
+| Task | Command | Description |
+| :--- | :--- | :--- |
+| **Run Dev Server** | `bun run dev` | Spins up the Vite dev server at `http://localhost:5173` |
+| **Build Bundle** | `bun run build` | Builds a production-ready application bundle in `/dist` |
+| **Lint Code** | `bun run lint` | Inspects code quality and rules compliance via ESLint |
+| **Run Tests** | `bun test` | Executes the unit test suite |

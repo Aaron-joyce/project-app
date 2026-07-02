@@ -1,3 +1,2 @@
 [test]
-preload = ["./bun-setup.ts"]
-preload = ["happy-dom/register"]
+preload = ["./happydom.ts", "./bun-setup.ts"]
